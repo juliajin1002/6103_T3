@@ -19,4 +19,4 @@ from statsmodels.formula.api import glm
 # model = glm(formula, data, family)
 
 # read in file
-bank_df = pd.read_csv('bank.csv', sep = ';', engine = 'python')
+bank_df = pd.read_csv('bank-additional-full.csv', sep = ';', engine = 'python')
