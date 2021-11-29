@@ -27,8 +27,8 @@ dfChkBasics(bank_df)
 
 ## related to last contact of current campaign:
 # contact: contact communication type
-# day: last contact day
 # month: last contact month of year
+# day_of_week: day of week (mon, tues, wed, etc.) last contact was made
 # duration: last contact duration in seconds (note: highly affects output target; if duration = 0 then y = no)
 
 ## other attributes:
@@ -45,3 +45,38 @@ dfChkBasics(bank_df)
 
 ## output variable - desired target
 # y: has the client subscribed a term deposit? (binary: 'yes', 'no')
+
+#%%
+# basic eda around demographics
+# looking for any obvious differences in target output by demographic variable
+
+# stacked histogram by age
+yes = bank_df[bank_df['y'] == 'yes']
+no = bank_df[bank_df['y'] == 'no']
+
+fig, ax = plt.subplots()
+ax.hist(yes['age'], label = 'yes', histtype = 'step', color = 'blue')
+ax.hist(no['age'], label = 'no', histtype = 'step', color = 'red')
+
+ax.set_xlabel('Age')
+ax.set_ylabel('Number of People')
+ax.legend()
+plt.title('Histogram of Ages by Campaign Result')
+
+plt.show()
+# majority of people did not say yes to deposit
+# maybe yes results tend to be younger? need to show as proportions - we can use box plots for this
+
+#%%
+ax = sns.boxplot(x = 'y', y = 'age', data = bank_df)
+# doesn't appear to be huge difference, but those who said yes did have larger IQR of age
+
+#%%
+# examine job
+print(bank_df['job'].value_counts())
+
+
+# %%
+sns.pairplot(bank_df)
+
+# %%
