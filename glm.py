@@ -38,3 +38,30 @@ modelBank = glm(formula='y~C(housing)+C(loan)+duration+campaign', data=bank_df, 
 modelBankFit = modelBank.fit()
 print(modelBankFit.summary())
 # %%
+# # Deviance
+# Formula
+# D = −2LL(β)
+# * Measure of error
+# * Lower deviance → better model fit
+print(-2*modelBankFit.llf)
+# Compare to the null deviance
+print(modelBankFit.null_deviance)
+# 499.98  # df = 399 
+# %%
+# # Interpretation
+np.exp(modelBankFit.params)
+np.exp(modelBankFit.conf_int())
+
+# %%
+# Confusion matrix
+# Define cut-off value
+cut_off = 0.3
+# Compute class predictions
+modelpredictions = pd.DataFrame( columns=['Prediction'], data= modelBankFit.predict())
+modelpredictions['classLogitAll'] = np.where(modelpredictions['Prediction'] > cut_off, 1, 0)
+#
+# Make a cross table
+print(pd.crosstab(bank_df.y, modelpredictions.classLogitAll,
+rownames=['Actual'], colnames=['Predicted'],
+margins = True))
+# %%
