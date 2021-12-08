@@ -6,6 +6,8 @@
 exec(open("import.py").read())
 exec(open("functions.py").read())
 
+bank_df = bank_df
+
 print('bank_df is now loaded into the environment.')
 
 # %%
@@ -45,6 +47,11 @@ dfChkBasics(bank_df)
 
 ## output variable - desired target
 # y: has the client subscribed a term deposit? (binary: 'yes', 'no')
+
+#%% 
+# transform response variable to numeric (0 = "no", 1 = "yes")
+bank_df['y'] = bank_df['y'].replace(to_replace=['no', 'yes'], value=[0, 1])
+bank_df.head()
 
 #%%
 # basic eda around demographics
