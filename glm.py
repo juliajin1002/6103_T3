@@ -14,34 +14,36 @@ from statsmodels.formula.api import glm
 # FORMULA based (we had been using this for ols)
 # model = glm(formula, data, family)
 
-bank_df = pd.read_csv('bank2.csv')
+bank_df = pd.read_csv('bank-additional-full.csv')
+exec(open("import.py").read())
+bank_df = bank_df
+
+bank_df = bank_df.replace(to_replace=['no', 'yes'], value=[0, 1])
+bank_df.columns = ['age', 'job', 'marital', 'education', 'default', 'housing', 'loan', 'contact', 'month', 'day_of_week', 'duration', 'campaign', 'pdays', 'previous', 'poutcome', 'emp_var_rate', 'cons_price_idx', 'cons_conf_idx', 'euribor3m', 'nr_employed', 'y']
+
 #%%
 # Model construction
-# Start with some features about the call recepient
-modelBank = glm(formula='y~age+C(marital)+C(education)+C(default)+balance+C(housing)+C(loan)+C(contact)', data=bank_df, family=sm.families.Binomial())
+# Start with some features
+modelBank = glm(formula='y~C(default)+C(housing)+C(loan)+C(contact)+duration+campaign+pdays+previous+C(poutcome)', data=bank_df, family=sm.families.Binomial())
 modelBankFit = modelBank.fit()
 print(modelBankFit.summary())
 
 # %%
 # Drop features with p-value > 0.05
-modelBank = glm(formula='y~C(housing)+C(loan)', data=bank_df, family=sm.families.Binomial())
-modelBankFit = modelBank.fit()
-print(modelBankFit.summary())
-# %%
 # Now add more features
-modelBank = glm(formula='y~C(housing)+C(loan)+duration+campaign+pdays+previous+C(poutcome)', data=bank_df, family=sm.families.Binomial())
+modelBank = glm(formula='y~age+C(marital)+C(education)+duration+campaign', data=bank_df, family=sm.families.Binomial())
 modelBankFit = modelBank.fit()
 print(modelBankFit.summary())
 # %%
 # Drop features that have less effect on y
-modelBank = glm(formula='y~C(housing)+C(loan)+duration+campaign', data=bank_df, family=sm.families.Binomial())
+modelBank = glm(formula='y~age+duration+campaign', data=bank_df, family=sm.families.Binomial())
 modelBankFit = modelBank.fit()
 print(modelBankFit.summary())
 
 #%%
 from sklearn import linear_model
 
-x_cols = ['housing', 'loan', 'duration', 'campaign']
+x_cols = ['age', 'duration', 'campaign']
 x_bank = bank_df[x_cols]
 y_bank = bank_df['y']
 fullfit = linear_model.LogisticRegression()
@@ -93,7 +95,7 @@ np.exp(modelBankFit.conf_int())
 from sklearn.metrics import roc_curve, auc
 
 # Add prediction to dataframe
-bank_df['pred'] = full_split1.predict(bank_df[x_cols])
+bank_df['pred'] = modelBankFit.predict(bank_df[x_cols])
 
 fpr, tpr, thresholds =roc_curve(bank_df['y'], bank_df['pred'])
 roc_auc = auc(fpr, tpr)
@@ -114,7 +116,7 @@ print("Opitmal cutoff : %f" % roc_t['thresholds'])
 #
 # Write a function to change the proba to 0 and 1 base on a cut off value.
 
-cut_off = 0.108161
+cut_off = 0.093865
 predictions = (full_split1.predict_proba(X_test1)[:,1]>cut_off).astype(int)
 print(predictions)
 
