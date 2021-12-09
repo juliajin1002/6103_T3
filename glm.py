@@ -85,7 +85,7 @@ print("\nReady to continue.")
 print(-2*modelBankFit.llf)
 # Compare to the null deviance
 print(modelBankFit.null_deviance)
-# 499.98  # df = 399 
+
 # %%
 # # Interpretation
 np.exp(modelBankFit.params)
@@ -230,4 +230,15 @@ pyplot.show()
 # The positive scores indicate a feature that predicts class 1, 
 # whereas the negative scores indicate a feature that predicts class 0.
 
+# %%
+# Confusion matrix
+modelpredicitons = pd.DataFrame( columns=['predict'], data= modelBankFit.predict(bank_df)) 
+modelpredicitons['yLogit'] = modelBankFit.predict(bank_df)
+modelpredicitons['classLogitAll'] = np.where(modelpredicitons['yLogit'] > cut_off, 1, 0)
+print(modelpredicitons.classLogitAll.head())
+#
+# Make a cross table
+print(pd.crosstab(bank_df.y, modelpredicitons.classLogitAll,
+rownames=['Actual'], colnames=['Predicted'],
+margins = True))
 # %%
