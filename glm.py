@@ -70,34 +70,27 @@ print('coef_:', full_split1.coef_)
 
 print("\nReady to continue.")
 #%%
-
 test = full_split1.predict_proba(X_test1)
 print(test)
 print("\nReady to continue.")
 
 
 # %%
-# # Deviance
-# Formula
-# D = −2LL(β)
-# * Measure of error
-# * Lower deviance → better model fit
-print(-2*modelBankFit.llf)
-# Compare to the null deviance
-print(modelBankFit.null_deviance)
-# 499.98  # df = 399 
-# %%
-# # Interpretation
-np.exp(modelBankFit.params)
-np.exp(modelBankFit.conf_int())
-
-# %%
+# ROC curve, Optimal cutoff
 from sklearn.metrics import roc_curve, auc
 
-# Add prediction to dataframe
-bank_df['pred'] = modelBankFit.predict(bank_df[x_cols])
 
-fpr, tpr, thresholds =roc_curve(bank_df['y'], bank_df['pred'])
+# Add prediction probability to dataframe
+X_train1['pred'] = modelBankFit.predict(X_train1[x_cols])
+
+# Find optimal probability threshold
+fpr, tpr, threshold = roc_curve(y_train1, X_train1['pred'])
+i = np.arange(len(tpr)) 
+roc = pd.DataFrame({'tf' : pd.Series(tpr-(1-fpr), index=i), 'threshold' : pd.Series(threshold, index=i)})
+roc_t = roc.iloc[(roc.tf-0).abs().argsort()[:1]]
+
+print("Opitmal cutoff : %f" % roc_t['threshold'])
+
 roc_auc = auc(fpr, tpr)
 print("Area under the ROC curve : %f" % roc_auc)
 
@@ -105,19 +98,14 @@ print("Area under the ROC curve : %f" % roc_auc)
 # The optimal cut off would be where tpr is high and fpr is low
 # tpr - (1-fpr) is zero or near to zero is the optimal cut off point
 ####################################
-i = np.arange(len(tpr)) # index for df
-roc = pd.DataFrame({'fpr' : pd.Series(fpr, index=i),'tpr' : pd.Series(tpr, index = i), '1-fpr' : pd.Series(1-fpr, index = i), 'tf' : pd.Series(tpr - (1-fpr), index = i), 'thresholds' : pd.Series(thresholds, index = i)})
-roc.iloc[(roc.tf-0).abs().argsort()[:1]]
 
-roc_t = roc.iloc[(roc.tf-0).abs().argsort()[:1]]
-print("Opitmal cutoff : %f" % roc_t['thresholds'])
 
 #%%
 #
 # Write a function to change the proba to 0 and 1 base on a cut off value.
 
 cut_off = 0.093865
-predictions = (full_split1.predict_proba(X_test1)[:,1]>cut_off).astype(int)
+predictions = (full_split1.predict_proba(X_test1)[:,1] > cut_off).astype(int)
 print(predictions)
 
 print("\nReady to continue.")
@@ -135,10 +123,6 @@ print(p)
 
 print("\nReady to continue.")
 
-#%%
-print(predictcutoff(test, 0.5))
-
-print("\nReady to continue.")
 # %%
 # Classification Report
 #
@@ -159,13 +143,13 @@ print(classification_report(y_true, y_pred))
 #          F1 = 2 (precision)(recall)/(precision + recall)
 
 print("\nReady to continue.")
-# %%
+
 #%%
 # Precision-Recall vs Threshold
 
 y_pred=full_split1.predict(X_test1)
 
-y_pred_probs=full_split1.predict_proba(X_test1) 
+y_pred_probs = full_split1.predict_proba(X_test1) 
   # probs_y is a 2-D array of probability of being labeled as 0 (first 
   # column of array) vs 1 (2nd column in array)
 
@@ -175,11 +159,11 @@ precision, recall, thresholds = precision_recall_curve(y_test1, y_pred_probs[:, 
    #retrieve probability of being 1(in second column of probs_y)
 pr_auc = metrics.auc(recall, precision)
 
-plt.title("Precision-Recall vs Threshold Chart")
+plt.title("Precision-Recall vs Cutoff Chart")
 plt.plot(thresholds, precision[: -1], "b--", label="Precision")
 plt.plot(thresholds, recall[: -1], "r--", label="Recall")
 plt.ylabel("Precision, Recall")
-plt.xlabel("Threshold")
+plt.xlabel("Cutoff")
 plt.legend(loc="lower left")
 plt.ylim([0,1])
 
@@ -214,6 +198,32 @@ plt.ylabel('True Positive Rate')
 plt.legend()
 # show the plot
 plt.show()
+
+# %%
+# Confusion matrix of test set at optimal cutoff
+modelpredicitons = pd.DataFrame( columns=['predict'], data= modelBankFit.predict(X_test1)) 
+modelpredicitons['yLogit'] = modelBankFit.predict(X_test1)
+modelpredicitons['classLogitAll'] = np.where(modelpredicitons['yLogit'] > cut_off, 1, 0)
+#
+# Make a cross table
+print(pd.crosstab(y_test1, modelpredicitons.classLogitAll,
+rownames=['Actual'], colnames=['Predicted'],
+margins = True))
+
+# %%
+# # Deviance
+# Formula
+# D = −2LL(β)
+# * Measure of error
+# * Lower deviance → better model fit
+
+print('Null deviance: ' + str(modelBankFit.null_deviance))
+print('Residual deviance: ' + str(-2*modelBankFit.llf))
+
+# %%
+# # Interpretation
+np.exp(modelBankFit.params)
+
 
 # %%
 from matplotlib import pyplot
