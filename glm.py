@@ -219,6 +219,11 @@ print('Null deviance: ' + str(modelBankFit.null_deviance))
 print('Residual deviance: ' + str(-2*modelBankFit.llf))
 
 # %%
+# # Interpretation
+np.exp(modelBankFit.params)
+
+
+# %%
 # Feature importance
 from matplotlib import pyplot
 
