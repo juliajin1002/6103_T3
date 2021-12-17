@@ -60,96 +60,26 @@ from sklearn.model_selection import train_test_split
 # training size is 0.8
 full_split1 = linear_model.LogisticRegression()
 full_split1.fit(X_train1, y_train1)
-y_pred1 = full_split1.predict(X_test1)
-full_split1.score(X_test1, y_test1)
-
-print('score (train):', full_split1.score(X_train1, y_train1)) 
-print('score (test):', full_split1.score(X_test1, y_test1)) 
+print('Accuracy (with the test set):', full_split1.score(X_test1, y_test1))
+print('Accuracy (with the train set):', full_split1.score(X_train1, y_train1))
 print('intercept:', full_split1.intercept_)
 print('coef_:', full_split1.coef_)
 
 print("\nReady to continue.")
-#%%
-test = full_split1.predict_proba(X_test1)
-print(test)
-print("\nReady to continue.")
-
-
-# %%
-# ROC curve, Optimal cutoff
-from sklearn.metrics import roc_curve, auc
-
-
-# Add prediction probability to dataframe
-X_train1['pred'] = modelBankFit.predict(X_train1[x_cols])
-
-# Find optimal probability threshold
-fpr, tpr, threshold = roc_curve(y_train1, X_train1['pred'])
-i = np.arange(len(tpr)) 
-roc = pd.DataFrame({'tf' : pd.Series(tpr-(1-fpr), index=i), 'threshold' : pd.Series(threshold, index=i)})
-roc_t = roc.iloc[(roc.tf-0).abs().argsort()[:1]]
-
-print("Opitmal cutoff : %f" % roc_t['threshold'])
-
-roc_auc = auc(fpr, tpr)
-print("Area under the ROC curve : %f" % roc_auc)
-
-####################################
-# The optimal cut off would be where tpr is high and fpr is low
-# tpr - (1-fpr) is zero or near to zero is the optimal cut off point
-####################################
-
 
 #%%
-#
-# Write a function to change the proba to 0 and 1 base on a cut off value.
-
-cut_off = 0.093865
-predictions = (full_split1.predict_proba(X_test1)[:,1] > cut_off).astype(int)
-print(predictions)
+print(full_split1.predict(X_test1))
 
 print("\nReady to continue.")
-
-#%%
-def predictcutoff(arr, cutoff):
-  arrbool = arr[:,1]>cutoff
-  arr= arr[:,1]*arrbool/arr[:,1]
-  # arr= arr[:,1]*arrbool
-  return arr.astype(int)
 
 test = full_split1.predict_proba(X_test1)
-p = predictcutoff(test, cut_off)
-print(p)
-
-print("\nReady to continue.")
-
-# %%
-# Classification Report
-#
-from sklearn.metrics import classification_report
-y_true, y_pred = y_test1, full_split1.predict(X_test1)
-print(classification_report(y_true, y_pred))
-
-#                         predicted 
-#                   0                  1
-# Actual 0   True Negative  TN      False Positive FP
-# Actual 1   False Negative FN      True Positive  TP
-# 
-# Accuracy    = (TP + TN) / Total
-# Precision   = TP / (TP + FP)
-# Recall rate = TP / (TP + FN) = Sensitivity
-# Specificity = TN / (TN + FP)
-# F1_score is the "harmonic mean" of precision and recall
-#          F1 = 2 (precision)(recall)/(precision + recall)
-
-print("\nReady to continue.")
 
 #%%
 # Precision-Recall vs Threshold
 
 y_pred=full_split1.predict(X_test1)
 
-y_pred_probs = full_split1.predict_proba(X_test1) 
+y_pred_probs=full_split1.predict_proba(X_test1) 
   # probs_y is a 2-D array of probability of being labeled as 0 (first 
   # column of array) vs 1 (2nd column in array)
 
@@ -159,15 +89,19 @@ precision, recall, thresholds = precision_recall_curve(y_test1, y_pred_probs[:, 
    #retrieve probability of being 1(in second column of probs_y)
 pr_auc = metrics.auc(recall, precision)
 
-plt.title("Precision-Recall vs Cutoff Chart")
+plt.title("Precision-Recall vs Threshold Chart")
 plt.plot(thresholds, precision[: -1], "b--", label="Precision")
 plt.plot(thresholds, recall[: -1], "r--", label="Recall")
 plt.ylabel("Precision, Recall")
-plt.xlabel("Cutoff")
+plt.xlabel("Threshold")
 plt.legend(loc="lower left")
 plt.ylim([0,1])
 
 print("\nReady to continue.")
+
+# Our graph suggests that the optimal cutoff is at the intercept of precision and recall
+# So the cutoff is 0.2.
+
 #%%
 # Receiver Operator Characteristics (ROC)
 # Area Under the Curve (AUC)
@@ -199,16 +133,80 @@ plt.legend()
 # show the plot
 plt.show()
 
-# %%
-# Confusion matrix of test set at optimal cutoff
-modelpredicitons = pd.DataFrame( columns=['predict'], data= modelBankFit.predict(X_test1)) 
-modelpredicitons['yLogit'] = modelBankFit.predict(X_test1)
-modelpredicitons['classLogitAll'] = np.where(modelpredicitons['yLogit'] > cut_off, 1, 0)
+#%%
+# Classification Report
 #
-# Make a cross table
-print(pd.crosstab(y_test1, modelpredicitons.classLogitAll,
-rownames=['Actual'], colnames=['Predicted'],
-margins = True))
+from sklearn.metrics import classification_report
+y_true, y_pred = y_test1, full_split1.predict(X_test1[x_cols])
+print(classification_report(y_true, y_pred))
+
+#                         predicted 
+#                   0                  1
+# Actual 0   True Negative  TN      False Positive FP
+# Actual 1   False Negative FN      True Positive  TP
+# 
+# Accuracy    = (TP + TN) / Total
+# Precision   = TP / (TP + FP)
+# Recall rate = TP / (TP + FN) = Sensitivity
+# Specificity = TN / (TN + FP)
+# F1_score is the "harmonic mean" of precision and recall
+#          F1 = 2 (precision)(recall)/(precision + recall)
+
+print("\nReady to continue.")
+
+# %%
+# Find Optimal cutoff with the function we defined
+####################################
+# The optimal cut off would be where tpr is high and fpr is low
+# tpr - (1-fpr) is zero or near to zero is the optimal cut off point
+####################################
+
+from sklearn.metrics import auc
+
+# Add prediction probability to dataframe
+X_test1['pred'] = modelBankFit.predict(X_test1[x_cols])
+
+# Find optimal probability threshold
+fpr, tpr, threshold = roc_curve(y_test1, X_test1['pred'])
+i = np.arange(len(tpr)) 
+roc = pd.DataFrame({'tf' : pd.Series(tpr-(1-fpr), index=i), 'threshold' : pd.Series(threshold, index=i)})
+roc_t = roc.iloc[(roc.tf-0).abs().argsort()[:1]]
+
+print("Opitmal cutoff : %f" % roc_t['threshold'])
+
+roc_auc = auc(fpr, tpr)
+print("Area under the ROC curve : %f" % roc_auc)
+
+#%%
+#
+# Change the proba to 0 and 1 base on the cutoff value.
+
+cut_off = 0.095390
+predictions = (X_test1['pred']>cut_off).astype(int)
+print(predictions)
+
+print("\nReady to continue.")
+
+# %%
+# Classification Report
+#
+from sklearn.metrics import classification_report
+y_true, y_pred = y_test1, predictions
+print(classification_report(y_true, y_pred))
+
+#                         predicted 
+#                   0                  1
+# Actual 0   True Negative  TN      False Positive FP
+# Actual 1   False Negative FN      True Positive  TP
+# 
+# Accuracy    = (TP + TN) / Total
+# Precision   = TP / (TP + FP)
+# Recall rate = TP / (TP + FN) = Sensitivity
+# Specificity = TN / (TN + FP)
+# F1_score is the "harmonic mean" of precision and recall
+#          F1 = 2 (precision)(recall)/(precision + recall)
+
+print("\nReady to continue.")
 
 # %%
 # # Deviance
@@ -226,6 +224,7 @@ np.exp(modelBankFit.params)
 
 
 # %%
+# Feature importance
 from matplotlib import pyplot
 
 importance = full_split1.coef_[0]
@@ -240,4 +239,3 @@ pyplot.show()
 # The positive scores indicate a feature that predicts class 1, 
 # whereas the negative scores indicate a feature that predicts class 0.
 
-# %%
