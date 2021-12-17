@@ -1,0 +1,17 @@
+DATS 6103 Final Project
+Topic Submission
+
+Team 3
+Alice Yang, Julia Jin, Eric Newman
+
+Effectiveness of marketing techniques is a crucial question for any business seeking to gain customers. For this project, our team decided to study the topic of marketing effectiveness by analyzing a dataset of a direct marketing campaign for a Portuguese banking institution. The dataset is provided by Kaggle and can be found here: https://www.kaggle.com/ruthgn/bank-marketing-data-set. 
+
+Our SMART questions will be tailored toward building models to help the bank make optimal use of its marketing campaigns. Specifically, we will ask:
+- What factors are related to a customer subscribing to a term deposit?
+- Are there any groupings of potential customers that can inform marketing?
+- Can we predict who will subscribe based on demographic or economic factors, or based on marketing techniques?
+- Who makes the best potential customers, based on demographics?
+
+To answer these questions, we project that we will use the following techniques: clustering to determine if the potential customers can be grouped, logistic regression to predict the binary result for potential customers (subscribed or declined), feature selection to determine which prediction variables make the best model, and linear regression, to see if we can identify relationships between numeric variables for those who subscribed.
+
+Github: https://github.com/juliajin1002/6103_T3
