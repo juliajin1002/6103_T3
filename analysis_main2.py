@@ -1,3 +1,24 @@
+#%% [markdown]
+
+# DATS 6103, Intro to Data Mining, Fall 2021
+# Team 3 Final Project Code and Analysis
+# Julia Jin, Eric Newman, Alice Yang
+
+#%% [markdown]
+
+# Sections:
+# 1. Data import and cleaning
+# 2. Principal components analysis
+# 3. Feature selection
+#   a. Lasso regression
+#   b. Logistic regression
+# 4. Classification models: logistic regression, KNN, SVM
+# 5. Model comparison
+# 6. Results and conclusion
+
+#%% [markdown]
+# Section 1: Data Import and Cleaning
+
 #%%
 # import libraries and read in file
 
@@ -69,6 +90,9 @@ print('bank_df is now loaded into the environment.')
 # %%
 # for reference/data dictionary
 dfChkBasics(bank_df)
+
+#%% [markdown]
+# Section 2: Principal Components Analysis
 
 # %%
 # use only numeric variables - keep y for coloring
@@ -724,3 +748,259 @@ pyplot.show()
 # Notice that the coefficients are both positive and negative. 
 # The positive scores indicate a feature that predicts class 1, 
 # whereas the negative scores indicate a feature that predicts class 0.
+
+#%% [markdown]
+# Section 4: Classification Models
+
+#%%
+from sklearn.svm import SVC
+from sklearn.linear_model import LogisticRegression
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.metrics import confusion_matrix 
+
+
+#%%
+bank_df=pd.read_csv('bank-additional-full.csv')
+exec(open("import.py").read())
+
+#%%[markdown]
+#Processing the data
+#
+#there are unknown values in the columns job, marital, education, default, housing, and loan.
+#I droped the the unknowns in job, marital and education since they have many levels and it's 
+#hard to decide how we're going to categorize the unknown while transforming these columns
+# into numeric. And since our data has over 40k rows, and the largest number of unknown rows
+#1731, I decided to drop them to prevent misleading model and results.
+#
+#For all the binary columns, since unknown could be either 'yes' or 'no', I transfered all the unknowns into 0.5,
+# as a average value.
+#%%
+bank=bank_df.copy()
+bank.replace({'no':0,'yes':1},inplace=True)
+bank.replace({'job':'unknown'},value=np.nan,inplace=True)
+bank.replace({'marital':'unknown'},value=np.nan,inplace=True)
+bank.replace({'education':'unknown'},value=np.nan,inplace=True)
+bank.replace({'default':'unknown'},value=0.5,inplace=True)
+bank.replace({'housing':'unknown'},value=0.5,inplace=True)
+bank.replace({'loan':'unknown'},value=0.5,inplace=True)
+bank.dropna(inplace=True)
+
+#%%
+#tranforming job column
+bank['management']=[1 if r.job=='management' else 0 for i,r in bank.iterrows() ]
+bank['admin.']=[1 if r.job=='admin.' else 0 for i,r in bank.iterrows() ]
+bank['blue-collar']=[1 if r.job=='blue-collar' else 0 for i,r in bank.iterrows() ]
+bank['technician']=[1 if r.job=='technician' else 0 for i,r in bank.iterrows() ]
+bank['housemaid']=[1 if r.job=='housemaid' else 0 for i,r in bank.iterrows() ]
+bank['retired']=[1 if r.job=='retired' else 0 for i,r in bank.iterrows() ]
+bank['unemployed']=[1 if r.job=='unemployed' else 0 for i,r in bank.iterrows() ]
+bank['entrepreneur']=[1 if r.job=='entrepreneur' else 0 for i,r in bank.iterrows() ]
+bank['student']=[1 if r.job=='student' else 0 for i,r in bank.iterrows() ]
+bank['self-employed']=[1 if r.job=='self-employed' else 0 for i,r in bank.iterrows() ]
+bank['services']=[1 if r.job=='services' else 0 for i,r in bank.iterrows() ]
+bank.drop(columns=['job'],inplace=True)
+
+
+
+#%%
+#transforming marital column
+bank['single']=[1 if r.marital=='single' else 0 for i,r in bank.iterrows() ]
+bank['married']=[1 if r.marital=='married' else 0 for i,r in bank.iterrows() ]
+bank['divorced']=[1 if r.marital=='divorced' else 0 for i,r in bank.iterrows() ]
+bank=bank.drop(columns=['marital'])
+#%%
+#education
+bank.replace({'basic.4y':1,'basic.6y':2,'basic.9y':3,'high.school':4,'illiterate':5,'professional.course':6,'university.degree':7},inplace=True)
+
+#%%
+#Month
+bank['jan']=[1 if r.month=='jan' else 0 for i,r in bank.iterrows() ]
+bank['feb']=[1 if r.month=='feb' else 0 for i,r in bank.iterrows() ]
+bank['mar']=[1 if r.month=='mar' else 0 for i,r in bank.iterrows() ]
+bank['apr']=[1 if r.month=='apr' else 0 for i,r in bank.iterrows() ]
+bank['may']=[1 if r.month=='may' else 0 for i,r in bank.iterrows() ]
+bank['jun']=[1 if r.month=='jun' else 0 for i,r in bank.iterrows() ]
+bank['jul']=[1 if r.month=='jul' else 0 for i,r in bank.iterrows() ]
+bank['aug']=[1 if r.month=='aug' else 0 for i,r in bank.iterrows() ]
+bank['sep']=[1 if r.month=='sep' else 0 for i,r in bank.iterrows() ]
+bank['oct']=[1 if r.month=='oct' else 0 for i,r in bank.iterrows() ]
+bank['nov']=[1 if r.month=='nov' else 0 for i,r in bank.iterrows() ]
+bank['dec']=[1 if r.month=='dec' else 0 for i,r in bank.iterrows() ]
+bank.drop(columns=['month'],inplace=True)
+
+#%%
+#day_of_week
+bank['mon']=[1 if r.day_of_week=='mon' else 0 for i,r in bank.iterrows() ]
+bank['tue']=[1 if r.day_of_week=='tue' else 0 for i,r in bank.iterrows() ]
+bank['wed']=[1 if r.day_of_week=='wed' else 0 for i,r in bank.iterrows() ]
+bank['thu']=[1 if r.day_of_week=='thu' else 0 for i,r in bank.iterrows() ]
+bank['fri']=[1 if r.day_of_week=='fri' else 0 for i,r in bank.iterrows() ]
+bank.drop(columns=['day_of_week'],inplace=True)
+
+#%%
+#contact
+bank.replace({'contact':{'cellular':0,'telephone':1}},inplace=True)
+
+
+#%%
+#poutcome
+bank.replace({'poutcome':{'failure':0,'nonexistent':1,'success':2,}},inplace=True)
+#%%
+#Standardizing numeric values:
+from sklearn.preprocessing import StandardScaler
+
+num_col=['age','education','duration','campaign','pdays','previous','emp.var.rate','cons.price.idx', 'cons.conf.idx', 'euribor3m', 'nr.employed']
+scaler=StandardScaler()
+scaler.fit(bank[num_col])
+num_trans=scaler.transform(bank[num_col])
+bank[num_col]=num_trans
+#%% Logistic Regression with all 47 variables
+bank_x=bank.drop(columns=['y'])
+bank_y=bank['y']
+x_train,x_test,y_train,y_test=train_test_split(bank_x,bank_y,train_size=0.85,random_state=1)
+lr=LogisticRegression(max_iter=10000)
+lr.fit(x_train,y_train)
+print('Test accuracy',lr.score(x_train,y_train))
+print('The accuracy score for LogisticRegression model is', lr.score(x_test,y_test))
+pd.DataFrame(lr.coef_.reshape(47,1),index=np.array(bank_x.columns),columns=['coefficients'])
+
+# %%[markdown]
+#Grouping the columns based on coefficients:
+#
+#Since we have so many columns in our data, the models we build might result
+#in overfitting. In this case, we would like to combine some bianry columns with 
+# similar impact (by looking at their coefficients) into groups to reduce dimension.
+#
+#For all the jobs we have:
+#Retired, Student have strong positive effect, so we group them into job_sp column
+#
+#Management,Admin, technician, unemployed have weak positive effect, grouped into job_wp
+#
+#Self-employed and services have weak nagative effect (as job_wn)
+#
+#Blue-collar, housemaid, entrepreneur are grouped as job_sn
+#%%
+bank['job_sp']=bank[['retired','student']].sum(axis=1)
+bank['job_w']=bank[['management','admin.','technician','unemployed']].sum(axis=1)
+bank['job_wn']=bank[['self-employed','services']].sum(axis=1)
+bank['job_sn']=bank[['blue-collar','housemaid','entrepreneur']].sum(axis=1)
+bank.drop(columns=['management','admin.','blue-collar','technician','housemaid','retired','unemployed','entrepreneur','student','self-employed','services'],inplace=True)
+
+#%%[markdown]
+#For all the months we have:
+#March and August have a strong positive impact, so we will group them into m_sp
+#
+#September, October and December have a weaker positive impact (as m_wp)
+#
+#April, May, Jun, and November seems to have a strong negative effect on y (as n_sn)
+#
+#January, Febuary, July have a weaker nigative impact/ no impact on y (as m_wn)
+
+#%%
+bank['m_sp']=bank[['mar','aug']].sum(axis=1)
+bank['m_wp']=bank[['sep','oct','dec']].sum(axis=1)
+bank['m_sn']=bank[['apr','may','jun','nov']].sum(axis=1)
+bank['m_wn']=bank[['jan','feb','jul']].sum(axis=1)
+bank.drop(columns=['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'],inplace=True)
+
+#%%[markdown]
+#For all day_of_week we have:
+#Wednesday has strong positive effect (as d_sp)
+#
+#Tuesday has weaker positive effect (as d_wp)
+#
+#Monday has strong negative effect (as d_sn)
+#
+#Thursday and Friday has weak negative effect (as d_wn)
+#%%
+bank['d_sp']=bank['wed']
+bank['d_wp']=bank['tue']
+bank['d_sn']=bank['mon']
+bank['d_wn']=bank[['thu','fri']].sum(axis=1)
+bank.drop(columns=['mon','tue','wed','thu','fri'],inplace=True)
+
+#%% split data into x and y
+bank_x=bank.drop(columns=['y'])
+bank_y=bank.y
+
+#%%
+#Linear SVC model
+x_train,x_test,y_train,y_test=train_test_split(bank_x,bank_y,train_size=0.7,random_state=1)
+svc_linear=SVC(kernel='linear')
+svc_linear.fit(x_train,y_train)
+#Confusin Matrix
+print(confusion_matrix(y_test, svc_linear.predict(x_test)))
+#Coefficients
+pd.DataFrame(svc_linear.coef_.reshape(31,1),index=np.array(bank_x.columns),columns=['coefficients'])
+
+#%%
+#LogisticRegression model
+lr=LogisticRegression(max_iter=10000)
+lr.fit(x_train,y_train)
+#Confusion Matrix
+print(confusion_matrix(y_test, lr.predict(x_test)))
+#Coefficients
+pd.DataFrame(lr.coef_.reshape(31,1),index=np.array(bank_x.columns),columns=['coefficients'])
+
+#%%
+#KNN model
+#Tuning for the optimal k
+for n in np.arange(1,452,50):
+    knn=KNeighborsClassifier(n_neighbors=n)
+    knn.fit(x_train,y_train)
+    print(f'The train accuracy for {n}th nearest neighbor is: {knn.score(x_test,y_test)}')
+#%%
+#The best k-th nearest neighbor is 101, choose to use n=100
+knn=KNeighborsClassifier(n_neighbors=100)
+knn.fit(x_train,y_train)
+#Confusion Matrix
+print(confusion_matrix(y_test, knn.predict(x_test)))
+
+
+#%% [markdown]
+# Section 5: Model Comparison
+#%%
+#Accuracy Comparison:
+#Linear SVC
+print('Train accuracy score for Linear SVC model is',svc_linear.score(x_train,y_train))
+print('The test accuracy score for Linear SVC model is', svc_linear.score(x_test,y_test))
+#Logistic Regression
+print('Test accuracy score for LogisticRegression model is',lr.score(x_train,y_train))
+print('The accuracy score for LogisticRegression model is', lr.score(x_test,y_test))
+#KNN
+print('Train accuracy score for KNN with k=100 is',knn.score(x_train,y_train))
+print('The test accuracy score for KNN with k=100 is', knn.score(x_test,y_test))
+#According to the test accuracy scores, Logistic Regression has the highest test accuracy 
+#among all.
+
+#%%
+#Precision Comparison:
+#Linear SVC
+print(classification_report(y_test, svc_linear.predict(x_test)))
+#Logistic Regression
+print(classification_report(y_test, lr.predict(x_test)))
+#KNN
+print(classification_report(y_test, knn.predict(x_test)))
+#According to the classification report for the three models, knn has the highest
+#precision among all models.
+
+#%%[markdown]
+#For this business problem, we want to choose the best model which maximize both Accuracy and 
+#precision for prediction. Since the two models with the highest precision (Logistic Regression and KNN)
+# have a precision that is really closed to each other, we may conclude that Logistic Regression is the 
+#best model among all, with a relavantly high precision and the highest accuracy.
+
+#%% [markdown]
+# Section 6: Results and Conclusions
+#
+#Unsupervised learning revealed clusters of interest for economic conditions, customer demographics (age), 
+# and marketing techniques.
+#
+# Feature selection revealed most important explanatory factors.
+#
+# Of the predictive models, logistic regression performed the best on the test data.
+#
+#As a conclusion, These insights can lead banking institutions to fine-tune their marketing targets (older), 
+# techniques (established relationships vs. no chance), and timing (in more stable employment markets)
+
+# EOF
