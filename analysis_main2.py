@@ -1,25 +1,5 @@
-#%% [markdown]
-
-# DATS 6103, Intro to Data Mining, Fall 2021
-# Team 3 Final Project Code and Analysis
-# Julia Jin, Eric Newman, Alice Yang
-
-#%% [markdown]
-
-# Sections:
-# 1. Data import and cleaning (line 22)
-# 2. EDA (line 91)
-#   a. Basic EDA - plots (line 94)
-#   b. PCA, unsupervised learning (line 127)
-# 3. Feature selection (line 353)
-#   a. Lasso regression (line )
-#   b. Logistic regression (line 518)
-# 4. Classification models: logistic regression, KNN, SVM
-# 5. Model comparison
-# 6. Results and conclusion
-
-#%% [markdown]
-# Section 1: Data Import and Cleaning
+#%%
+# import libraries and read in file
 
 #%%
 # import libraries
@@ -38,14 +18,10 @@ from statsmodels.formula.api import glm
 # FORMULA based (we had been using this for ols)
 # model = glm(formula, data, family)
 
-from sklearn.linear_model import LogisticRegression
-from sklearn.feature_selection import SelectFromModel
-from sklearn.preprocessing import StandardScaler
-
 # read in file
 bank_df = pd.read_csv('bank-additional-full.csv', sep = ';', engine = 'python')
 
-# define quick check
+#%%
 # Standard quick checks
 def dfChkBasics(dframe, valCnt = False): 
   cnt = 1
@@ -86,60 +62,13 @@ def dfChkBasics(dframe, valCnt = False):
       print(dframe[colname].value_counts())
       cnt +=1
 
-# basic data checks
-dfChkBasics(bank_df)
+bank_df = bank_df
+
+print('bank_df is now loaded into the environment.')
 
 # %%
-# data dictionary
-# data source: https://www.kaggle.com/henriqueyamahata/bank-marketing
-
-## bank client data:
-# age: age of individual
-# job: job
-# marital: marital status (note: divorced = divorced or widowed)
-# education: highest level of education
-# default: has credit in default?
-# housing: has housing loan
-# loan: has personal loan
-
-## related to last contact of current campaign:
-# contact: contact communication type
-# month: last contact month of year
-# day_of_week: day of week (mon, tues, wed, etc.) last contact was made
-# duration: last contact duration in seconds (note: highly affects output target; if duration = 0 then y = no)
-
-## other attributes:
-# campaign: number of contacts performed during this campaign and for this client (numeric, includes last contact)
-# pdays: number of days that passed by after the client was last contacted from a previous campaign (numeric; 999 means client was not previously contacted)
-# previous: number of contacts performed before this campaign and for this client (numeric)
-# poutcome: outcome of the previous marketing campaign
-
-## social and economic context attributes:
-# emp.var.rate: employment variation rate - quarterly indicator
-# cons.price.idx: consumer price index - monthly indicator
-# euribor3m: euribor 3 month rate
-# nr.employed: number of employees - quarterly indicator
-
-## output variable - desired target
-# y: has the client subscribed a term deposit? (binary: 'yes', 'no')
-
-#%% 
-# transform response variable to numeric (0 = "no", 1 = "yes")
-bank_df['y'] = bank_df['y'].replace(to_replace=['no', 'yes'], value=[0, 1])
-bank_df.head()
-
-#%% [markdown]
-# Section 2: EDA
-
-#%%
-# basic eda around demographics
-# looking for any obvious differences in target output by demographic variable
-
-# stacked histogram by age
-
-
-#%% [markdown]
-# Principal Components Analysis
+# for reference/data dictionary
+dfChkBasics(bank_df)
 
 # %%
 # use only numeric variables - keep y for coloring
@@ -160,6 +89,7 @@ x = StandardScaler().fit_transform(x)
 # %%
 # pca projection
 from sklearn.decomposition import PCA
+import pandas as pd
 
 pca = PCA()
 
@@ -175,6 +105,9 @@ pdf_final = pd.concat([pdf, bankdf_num[['y']]], axis = 1)
 # %%
 # want to plot out cumulative proportion of variance explained by each principal component so we know how many we need
 # use scree plot
+import numpy as np
+import matplotlib.pyplot as plt
+
 varpropcuml = np.cumsum(pca.explained_variance_ratio_)
 
 # %%
@@ -370,6 +303,7 @@ ax.legend(targets, title = 'Response', fontsize = 14)
 # PC3 high and PC4 low = no
 # Old age and low duration and low # of contacts = no
 
+
 # %%
 fig = plt.figure(figsize = (8,8))
 ax = fig.add_subplot(1,1,1) 
@@ -410,11 +344,32 @@ ax.legend(targets, title = 'Response', fontsize = 14)
 # Low PC4 but high PC5 = no
 # Low duration of call and high number of contacts, higher age, higher duration? tough to interpret
 
+
 #%% [markdown]
 # Section 3: Feature Selection
+# feature selection
+
+# attempt to do feature selection with lasso regression (L1) penalty in logistic regression model
+# if that doesn't work, default to feature importance by graphic coefficients
+# or can do feature importance/selection by testing ANOVA and chi-sq of each variable with response
 
 #%%
-# Lasso regression
+# import libraries and dataset
+
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+from sklearn.linear_model import LogisticRegression
+from sklearn.feature_selection import SelectFromModel
+from sklearn.preprocessing import StandardScaler
+
+exec(open("import.py").read())
+bank_df = bank_df
+bank_df['y'] = bank_df['y'].replace(to_replace=['no', 'yes'], value=[0, 1])
+
+# %%
 # transform dataset
 
 # make response binary
@@ -515,6 +470,7 @@ sel = SelectFromModel(LogisticRegression(penalty = 'l1', C = 0.0075, solver = 'l
 sel.fit(X, y)
 e = sel.get_support()
 
+
 # %%
 # put together pandas dataframe
 
@@ -527,6 +483,8 @@ cols = ['age', 'job', 'marital', 'education', 'default', 'housing', 'loan', 'con
 lassodf = pd.DataFrame(data = array, index = index_values, columns = cols)
 
 lassdf_final = lassodf.transpose()
+lassdf_final
+
 # print out above and put in slide deck
 
 #%%
@@ -766,15 +724,3 @@ pyplot.show()
 # Notice that the coefficients are both positive and negative. 
 # The positive scores indicate a feature that predicts class 1, 
 # whereas the negative scores indicate a feature that predicts class 0.
-
-
-
-#%% [markdown]
-# Section 4: Classification Models
-
-
-#%% [markdown]
-# Section 5: Model Comparison
-
-#%% [markdown]
-# Section 6: Results and Conclusions
